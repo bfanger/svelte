@@ -79,12 +79,16 @@ export function flush() {
 
 function update($$) {
 	if ($$.fragment !== null) {
+		$$.phase = 2;
 		$$.update();
+		$$.phase = 3;
 		run_all($$.before_update);
 		const dirty = $$.dirty;
 		$$.dirty = [-1];
+		$$.phase = 4;
 		$$.fragment && $$.fragment.p($$.ctx, dirty);
-
+		$$.phase = 5;
 		$$.after_update.forEach(add_render_callback);
+		$$.phase = 1;
 	}
 }

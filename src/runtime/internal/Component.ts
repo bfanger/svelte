@@ -19,7 +19,9 @@ interface Fragment {
 	/* outro   */ o: (local: any) => void;
 	/* destroy */ d: (detaching: 0|1) => void;
 }
+
 interface T$$ {
+	phase: number /* 0: init, 1: idle, 2: update, 3: beforeUpdate, 4: p, 5: afterUpdate */
 	dirty: number[];
 	ctx: null|any;
 	bound: any;
@@ -121,25 +123,28 @@ export function init(component, options, instance, create_fragment, not_equal, p
 
 		// everything else
 		callbacks: blank_object(),
+		phase: 0,
 		dirty,
 		skip_bound: false
 	};
-
-	let ready = false;
 
 	$$.ctx = instance
 		? instance(component, prop_values, (i, ret, ...rest) => {
 			const value = rest.length ? rest[0] : ret;
 			if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
 				if (!$$.skip_bound && $$.bound[i]) $$.bound[i](value);
-				if (ready) make_dirty(component, i);
+				if ($$.phase >= 1) make_dirty(component, i);
+				if ($$.phase === 2) console.warn('$$invalidate called during reactive statements');
+				if ($$.phase === 3) console.warn('$$invalidate called during beforeUpdate');
+				if ($$.phase === 4) console.warn('$$invalidate called during processing');
+				if ($$.phase === 5) console.warn('$$invalidate called during afterUpdate');
 			}
 			return ret;
 		})
 		: [];
 
 	$$.update();
-	ready = true;
+	$$.phase = 1;
 	run_all($$.before_update);
 
 	// `false` as a special case of no DOM component
